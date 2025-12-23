@@ -923,9 +923,16 @@ func (c *Client) Stream(ctx context.Context, in []*schema.Message,
 			}
 
 			if chunkErr != nil {
-				_ = sw.Send(nil, fmt.Errorf("failed to receive stream chunk: %w", chunkErr))
-				return
+				cause := context.Cause(ctx)
+				if cause != nil {
+					_ = sw.Send(nil, cause)
+					return
+				} else {
+					_ = sw.Send(nil, fmt.Errorf("failed to receive stream chunk from OpenAI: %w", chunkErr))
+					return
+				}
 			}
+
 
 			// stream usage return in last chunk without message content, then
 			// last message received from callback output stream: Message == nil and TokenUsage != nil
